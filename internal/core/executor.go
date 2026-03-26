@@ -27,6 +27,9 @@ func NewHandler() *Handler {
 			"SREM":      cmdSREM{},
 			"SISMEMBER": cmdSISMEMBER{},
 			"SMEMBERS":  cmdSMEMBERS{},
+			"ZADD":      cmdZADD{},
+			"ZSCORE":    cmdZSCORE{},
+			"ZRANK":     cmdZRANK{},
 		},
 	}
 }
