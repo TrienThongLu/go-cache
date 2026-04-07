@@ -3,13 +3,11 @@ package data_structure
 import "log"
 
 type SimpleSet struct {
-	key  string
 	dict map[string]struct{}
 }
 
-func CreateSimpleSet(key string) *SimpleSet {
+func CreateSimpleSet() *SimpleSet {
 	return &SimpleSet{
-		key:  key,
 		dict: make(map[string]struct{}),
 	}
 }

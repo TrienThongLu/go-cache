@@ -3,8 +3,11 @@ package core
 import (
 	"errors"
 
+	"github.com/TrienThongLu/goCache/internal/constant"
 	"github.com/TrienThongLu/goCache/internal/data_structure"
 )
+
+const setType = constant.SetType
 
 type cmdSADD struct{}
 
@@ -14,12 +17,13 @@ func (cmd cmdSADD) run(args []string) []byte {
 	}
 
 	key := args[0]
-	set, exist := setStore[key]
-	if !exist {
-		set = data_structure.CreateSimpleSet(key)
-		setStore[key] = set
+	obj := dictStore.Get(key)
+	if obj == nil {
+		dictStore.Set(key, data_structure.CreateSimpleSet(), setType, 0)
+		obj = dictStore.Get(key)
 	}
 
+	set := obj.Value.(*data_structure.SimpleSet)
 	return Encode(set.Add(args[1:]...), false)
 }
 
@@ -31,11 +35,12 @@ func (cmd cmdSREM) run(args []string) []byte {
 	}
 
 	key := args[0]
-	set, exist := setStore[key]
-	if !exist {
+	obj := dictStore.Get(key)
+	if obj == nil {
 		return Encode(0, false)
 	}
 
+	set := obj.Value.(*data_structure.SimpleSet)
 	return Encode(set.Remove(args[1:]...), false)
 }
 
@@ -47,11 +52,12 @@ func (cmd cmdSISMEMBER) run(args []string) []byte {
 	}
 
 	key := args[0]
-	set, exist := setStore[key]
-	if !exist {
+	obj := dictStore.Get(key)
+	if obj == nil {
 		return Encode(0, false)
 	}
 
+	set := obj.Value.(*data_structure.SimpleSet)
 	return Encode(set.IsMember(args[1]), false)
 }
 
@@ -63,10 +69,11 @@ func (cmd cmdSMEMBERS) run(args []string) []byte {
 	}
 
 	key := args[0]
-	set, exist := setStore[key]
-	if !exist {
-		return Encode(make([]string, 0), false)
+	obj := dictStore.Get(key)
+	if obj == nil {
+		return Encode(0, false)
 	}
 
+	set := obj.Value.(*data_structure.SimpleSet)
 	return Encode(set.Members(), false)
 }

@@ -9,6 +9,8 @@ import (
 	"github.com/TrienThongLu/goCache/internal/data_structure"
 )
 
+const zSetType = constant.ZSetType
+
 type cmdZADD struct{}
 
 func (cmd cmdZADD) run(args []string) []byte {
@@ -22,11 +24,12 @@ func (cmd cmdZADD) run(args []string) []byte {
 		return Encode(errors.New("ERR wrong number of (score, member) arg"), false)
 	}
 
-	zset, exist := zsetStore[key]
-	if !exist {
-		zset = data_structure.NewSortedSet(constant.DefaultBPlusTreeDegree)
-		zsetStore[key] = zset
+	obj := dictStore.Get(key)
+	if obj == nil {
+		dictStore.Set(key, data_structure.NewSortedSet(constant.DefaultBPlusTreeDegree), zSetType, 0)
+		obj = dictStore.Get(key)
 	}
+	zset := obj.Value.(*data_structure.SortedSet)
 
 	count := 0
 	for i := 1; i < len(args); i += 2 {
@@ -55,10 +58,12 @@ func (cmd cmdZSCORE) run(args []string) []byte {
 	}
 
 	key, member := args[0], args[1]
-	zset, exist := zsetStore[key]
-	if !exist {
+
+	obj := dictStore.Get(key)
+	if obj == nil {
 		return constant.RespNil
 	}
+	zset := obj.Value.(*data_structure.SortedSet)
 
 	score, exist := zset.GetScore(member)
 	if !exist {
@@ -76,10 +81,11 @@ func (cmd cmdZRANK) run(args []string) []byte {
 	}
 
 	key, member := args[0], args[1]
-	zset, exist := zsetStore[key]
-	if !exist {
+	obj := dictStore.Get(key)
+	if obj == nil {
 		return constant.RespNil
 	}
+	zset := obj.Value.(*data_structure.SortedSet)
 
 	rank := zset.GetRank(member)
 	return Encode(rank, false)

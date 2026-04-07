@@ -20,20 +20,20 @@ func (cmd cmdCMSINITBYDIM) run(args []string) []byte {
 	key := args[0]
 	width, err := strconv.ParseUint(args[1], 10, 64)
 	if err != nil {
-		return Encode(errors.New(fmt.Sprintf("width must be a integer number %s", args[1])), false)
+		return Encode(fmt.Errorf("width must be a integer number %s", args[1]), false)
 	}
 
 	depth, err := strconv.ParseUint(args[2], 10, 64)
 	if err != nil {
-		return Encode(errors.New(fmt.Sprintf("depth must be a integer number %s", args[2])), false)
+		return Encode(fmt.Errorf("depth must be a integer number %s", args[2]), false)
 	}
 
-	_, exist := cmsStore[key]
-	if exist {
+	if _, exist := cmsStore[key]; exist {
 		return Encode(errors.New("CMS: key already exist"), false)
 	}
 
 	cmsStore[key] = data_structure.CreateNewCMS(uint64(width), uint64(depth))
+
 	return constant.RespOk
 }
 
@@ -47,7 +47,7 @@ func (cmd cmdCMSINITBYPROB) run(args []string) []byte {
 	key := args[0]
 	errRate, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
-		return Encode(errors.New(fmt.Sprintf("errRate must be a floating point number %s", args[1])), false)
+		return Encode(fmt.Errorf("errRate must be a floating point number %s", args[1]), false)
 	}
 	if errRate <= 0 || errRate >= 1 {
 		return Encode(errors.New("CMS: invalid overestimation value"), false)
@@ -55,7 +55,7 @@ func (cmd cmdCMSINITBYPROB) run(args []string) []byte {
 
 	probability, err := strconv.ParseFloat(args[2], 64)
 	if err != nil {
-		return Encode(errors.New(fmt.Sprintf("probability must be a floating point number %s", args[2])), false)
+		return Encode(fmt.Errorf("probability must be a floating point number %s", args[2]), false)
 	}
 	if probability <= 0 || probability >= 1 {
 		return Encode(errors.New("CMS: invalid probability value"), false)

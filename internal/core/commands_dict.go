@@ -9,6 +9,8 @@ import (
 	"github.com/TrienThongLu/goCache/internal/constant"
 )
 
+const stringType = constant.StringType
+
 type cmdSET struct{}
 
 func (cmd cmdSET) run(args []string) []byte {
@@ -33,7 +35,7 @@ func (cmd cmdSET) run(args []string) []byte {
 		ttlMs = ttlSec * 1000
 	}
 
-	dictStore.Set(key, value, ttlMs)
+	dictStore.Set(key, value, stringType, ttlMs)
 
 	return constant.RespOk
 }
@@ -49,6 +51,10 @@ func (cmd cmdGET) run(args []string) []byte {
 	obj := dictStore.Get(key)
 	if obj == nil {
 		return constant.RespNil
+	}
+
+	if err := checkType(stringType, obj.Type); err != nil {
+		return Encode(err, false)
 	}
 
 	return Encode(obj.Value, false)

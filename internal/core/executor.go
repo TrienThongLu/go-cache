@@ -1,7 +1,9 @@
 package core
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"syscall"
 )
 
@@ -17,6 +19,7 @@ func NewHandler() *Handler {
 	return &Handler{
 		registry: map[string]cmd{
 			"PING":           cmdPING{},
+			"INFO":           cmdINFO{},
 			"SET":            cmdSET{},
 			"GET":            cmdGET{},
 			"TTL":            cmdTTL{},
@@ -71,4 +74,14 @@ func (cmd cmdPING) run(args []string) []byte {
 	}
 
 	return res
+}
+
+type cmdINFO struct{}
+
+func (cmd cmdINFO) run(args []string) []byte {
+	var info []byte
+	buf := bytes.NewBuffer(info)
+	buf.WriteString("# Keyspace\r\n")
+	buf.WriteString(fmt.Sprintf("db0:keys=%d,expires=0,avg_ttl=0\r\n", dictStore.Len()))
+	return Encode(buf.String(), false)
 }

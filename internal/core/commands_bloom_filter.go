@@ -19,20 +19,20 @@ func (cmd cmdBFRESERVE) run(args []string) []byte {
 	key := args[0]
 	errRate, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
-		return Encode(errors.New(fmt.Sprintf("error rate must be a floating point number %s", args[1])), false)
+		return Encode(fmt.Errorf("error rate must be a floating point number %s", args[1]), false)
 	}
 
 	capacity, err := strconv.ParseUint(args[2], 10, 64)
 	if err != nil {
-		return Encode(errors.New(fmt.Sprintf("error rate must be a positive integer number %s", args[2])), false)
+		return Encode(fmt.Errorf("error rate must be a positive integer number %s", args[2]), false)
 	}
 
-	_, exist := bfStore[key]
-	if exist {
-		return Encode(errors.New(fmt.Sprintf("Bloom filter with key '%s' already exist", key)), false)
+	if _, exist := bfStore[key]; exist {
+		return Encode(fmt.Errorf("Bloom filter with key '%s' already exist", key), false)
 	}
 
 	bfStore[key] = data_structure.CreateBloomFilter(capacity, errRate)
+
 	return constant.RespOk
 }
 
@@ -65,7 +65,7 @@ func (cmd cmdBFEXISTS) run(args []string) []byte {
 	key := args[0]
 	bf, exist := bfStore[key]
 	if !exist {
-		return Encode(errors.New(fmt.Sprintf("Bloom filter with key '%s' is not exist", key)), false)
+		return Encode(fmt.Errorf("Bloom filter with key '%s' is not exist", key), false)
 	}
 
 	if !bf.Exist(args[1]) {

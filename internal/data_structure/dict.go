@@ -1,9 +1,17 @@
 package data_structure
 
-import "time"
+import (
+	"log"
+	"time"
+
+	"github.com/TrienThongLu/goCache/internal/config"
+	"github.com/TrienThongLu/goCache/internal/constant"
+)
 
 type Obj struct {
-	Value interface{}
+	Value          interface{}
+	Type           constant.DataType
+	LastAccessTime uint32
 }
 
 type Dict struct {
@@ -18,9 +26,11 @@ func CreateDict() *Dict {
 	}
 }
 
-func newObj(value interface{}) *Obj {
+func newObj(value interface{}, dataType constant.DataType) *Obj {
 	return &Obj{
-		Value: value,
+		Value:          value,
+		Type:           dataType,
+		LastAccessTime: now(),
 	}
 }
 
@@ -55,13 +65,62 @@ func (dict *Dict) Get(key string) *Obj {
 			dict.Del(key)
 			return nil
 		}
+		obj.LastAccessTime = now()
 	}
 
 	return obj
 }
 
-func (dict *Dict) Set(key string, value interface{}, ttlMs int64) {
-	dict.dictStore[key] = newObj(value)
+func (dict *Dict) Len() int {
+	return len(dict.dictStore)
+}
+
+func (dict *Dict) EvictIfNeeded() {
+	if float64(dict.Len())/float64(config.MaxKeyNumber) < config.MinKeyRatioForEviction {
+		return
+	}
+
+	dict.PopulateEpool()
+	dict.evict()
+}
+
+func (dict *Dict) evict() {
+	log.Print("trigger eviction")
+	evictCount := int64(config.EvictionRatio * float64(config.MaxKeyNumber))
+
+	for i := 0; i < int(evictCount) && EPool.Len() > 0; i++ {
+		candidate := EPool.Pop()
+		dict.Del(candidate.Key)
+	}
+}
+
+func (dict *Dict) PopulateEpool() {
+	remain := config.EpoolLruSampleSize
+	for key := range dict.dictStore {
+		obj := dict.dictStore[key]
+
+		ttl, exist := dict.GetExpiry(key)
+		if !exist {
+			ttl = 0
+		}
+
+		EPool.Push(key, obj.LastAccessTime, ttl)
+
+		remain--
+		if remain == 0 {
+			break
+		}
+	}
+
+	log.Println("EPool:")
+	for _, item := range EPool.pool {
+		log.Println(item.Key, item.LastAccessTime, item.ExpireAt)
+	}
+}
+
+func (dict *Dict) Set(key string, value interface{}, dataType constant.DataType, ttlMs int64) {
+	dict.EvictIfNeeded()
+	dict.dictStore[key] = newObj(value, dataType)
 
 	if ttlMs > 0 {
 		dict.SetExpiry(key, ttlMs)
@@ -70,6 +129,7 @@ func (dict *Dict) Set(key string, value interface{}, ttlMs int64) {
 
 func (dict *Dict) Del(key string) bool {
 	if _, exist := dict.dictStore[key]; exist {
+		log.Printf("delete key %s", key)
 		delete(dict.dictStore, key)
 		delete(dict.expiredDictStore, key)
 		return true
