@@ -13,7 +13,7 @@ type Command struct {
 
 func checkType(dataType constant.DataType, currentType constant.DataType) error {
 	if dataType != currentType {
-		return errors.New("(error) WRONGTYPE Operation against a key holding the wrong kind of value")
+		return errors.New("WRONGTYPE Operation against a key holding the wrong kind of value")
 	}
 
 	return nil

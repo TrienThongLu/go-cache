@@ -29,6 +29,10 @@ func (cmd cmdZADD) run(args []string) []byte {
 		dictStore.Set(key, data_structure.NewSortedSet(constant.DefaultBPlusTreeDegree), zSetType, 0)
 		obj = dictStore.Get(key)
 	}
+
+	if err := checkType(zSetType, obj.Type); err != nil {
+		return Encode(err, false)
+	}
 	zset := obj.Value.(*data_structure.SortedSet)
 
 	count := 0
@@ -63,6 +67,10 @@ func (cmd cmdZSCORE) run(args []string) []byte {
 	if obj == nil {
 		return constant.RespNil
 	}
+
+	if err := checkType(zSetType, obj.Type); err != nil {
+		return Encode(err, false)
+	}
 	zset := obj.Value.(*data_structure.SortedSet)
 
 	score, exist := zset.GetScore(member)
@@ -84,6 +92,10 @@ func (cmd cmdZRANK) run(args []string) []byte {
 	obj := dictStore.Get(key)
 	if obj == nil {
 		return constant.RespNil
+	}
+
+	if err := checkType(zSetType, obj.Type); err != nil {
+		return Encode(err, false)
 	}
 	zset := obj.Value.(*data_structure.SortedSet)
 

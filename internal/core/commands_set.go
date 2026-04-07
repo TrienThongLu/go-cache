@@ -23,7 +23,11 @@ func (cmd cmdSADD) run(args []string) []byte {
 		obj = dictStore.Get(key)
 	}
 
+	if err := checkType(setType, obj.Type); err != nil {
+		return Encode(err, false)
+	}
 	set := obj.Value.(*data_structure.SimpleSet)
+
 	return Encode(set.Add(args[1:]...), false)
 }
 
@@ -40,7 +44,11 @@ func (cmd cmdSREM) run(args []string) []byte {
 		return Encode(0, false)
 	}
 
+	if err := checkType(setType, obj.Type); err != nil {
+		return Encode(err, false)
+	}
 	set := obj.Value.(*data_structure.SimpleSet)
+
 	return Encode(set.Remove(args[1:]...), false)
 }
 
@@ -57,7 +65,11 @@ func (cmd cmdSISMEMBER) run(args []string) []byte {
 		return Encode(0, false)
 	}
 
+	if err := checkType(setType, obj.Type); err != nil {
+		return Encode(err, false)
+	}
 	set := obj.Value.(*data_structure.SimpleSet)
+
 	return Encode(set.IsMember(args[1]), false)
 }
 
@@ -74,6 +86,10 @@ func (cmd cmdSMEMBERS) run(args []string) []byte {
 		return Encode(0, false)
 	}
 
+	if err := checkType(setType, obj.Type); err != nil {
+		return Encode(err, false)
+	}
 	set := obj.Value.(*data_structure.SimpleSet)
+
 	return Encode(set.Members(), false)
 }
