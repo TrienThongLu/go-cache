@@ -4,6 +4,9 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
+	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -12,6 +15,21 @@ import (
 	"github.com/TrienThongLu/goCache/internal/core"
 	io_multiplexing "github.com/TrienThongLu/goCache/internal/core/io_multiplexing"
 )
+
+var serverStatus int32 = constant.ServerStatusIdle
+
+func WaitForSignal(wg *sync.WaitGroup, signals chan os.Signal) {
+	defer wg.Done()
+
+	<-signals
+
+	for {
+		if atomic.CompareAndSwapInt32(&serverStatus, constant.ServerStatusIdle, constant.ServerStatusShuttingDown) {
+			log.Println("Shutting down gracefully")
+			os.Exit(0)
+		}
+	}
+}
 
 func readCommand(fd int) (*core.Command, error) {
 	var buf = make([]byte, 512)
@@ -26,7 +44,9 @@ func readCommand(fd int) (*core.Command, error) {
 	return core.ParseCmd(buf)
 }
 
-func RunIOMultiplexingServer() {
+func RunIOMultiplexingServer(wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	log.Println("starting an I/O Multiplexing TCP server on", config.Port)
 	listener, err := net.Listen(config.Protocol, config.Port)
 	if err != nil {
@@ -61,15 +81,27 @@ func RunIOMultiplexingServer() {
 
 	handler := core.NewHandler()
 	lastActiveExpireExecTime := time.Now()
-	for {
+	for atomic.LoadInt32(&serverStatus) != constant.ServerStatusShuttingDown {
 		if time.Now().After(lastActiveExpireExecTime.Add(constant.ActiveExpireFrequency)) {
+			if !atomic.CompareAndSwapInt32(&serverStatus, constant.ServerStatusIdle, constant.ServerStatusBusy) {
+				if atomic.LoadInt32(&serverStatus) == constant.ServerStatusShuttingDown {
+					return
+				}
+			}
 			core.ActiveDeleteExpiredKeys()
+			atomic.SwapInt32(&serverStatus, constant.ServerStatusIdle)
 			lastActiveExpireExecTime = time.Now()
 		}
 
 		events, err := ioMultiplexer.Wait()
 		if err != nil {
 			continue
+		}
+
+		if !atomic.CompareAndSwapInt32(&serverStatus, constant.ServerStatusIdle, constant.ServerStatusBusy) {
+			if atomic.LoadInt32(&serverStatus) == constant.ServerStatusShuttingDown {
+				return
+			}
 		}
 
 		for i := 0; i < len(events); i++ {
@@ -104,5 +136,7 @@ func RunIOMultiplexingServer() {
 				}
 			}
 		}
+
+		atomic.SwapInt32(&serverStatus, constant.ServerStatusIdle)
 	}
 }
