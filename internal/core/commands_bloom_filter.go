@@ -9,9 +9,7 @@ import (
 	"github.com/TrienThongLu/goCache/internal/data_structure"
 )
 
-type cmdBFRESERVE struct{}
-
-func (cmd cmdBFRESERVE) run(args []string) []byte {
+func (w *Worker) cmdBFRESERVE(args []string) []byte {
 	if len(args) != 3 && len(args) != 5 {
 		return Encode(errors.New("(error) ERR wrong number of arguments for 'BF.RESERVE' command"), false)
 	}
@@ -27,43 +25,39 @@ func (cmd cmdBFRESERVE) run(args []string) []byte {
 		return Encode(fmt.Errorf("error rate must be a positive integer number %s", args[2]), false)
 	}
 
-	if _, exist := bfStore[key]; exist {
+	if _, exist := w.bfStore[key]; exist {
 		return Encode(fmt.Errorf("Bloom filter with key '%s' already exist", key), false)
 	}
 
-	bfStore[key] = data_structure.CreateBloomFilter(capacity, errRate)
+	w.bfStore[key] = data_structure.CreateBloomFilter(capacity, errRate)
 
 	return constant.RespOk
 }
 
-type cmdBFADD struct{}
-
-func (cmd cmdBFADD) run(args []string) []byte {
+func (w *Worker) cmdBFADD(args []string) []byte {
 	if len(args) != 2 {
 		return Encode(errors.New("(error) ERR wrong number of arguments for 'BF.ADD' command"), false)
 	}
 
 	key := args[0]
-	bf, exist := bfStore[key]
+	bf, exist := w.bfStore[key]
 	if !exist {
 		bf = data_structure.CreateBloomFilter(constant.BfDefaultInitCapacity,
 			constant.BfDefaultErrRate)
-		bfStore[key] = bf
+		w.bfStore[key] = bf
 	}
 
 	bf.Add(args[1])
 	return constant.RespOk
 }
 
-type cmdBFEXISTS struct{}
-
-func (cmd cmdBFEXISTS) run(args []string) []byte {
+func (w *Worker) cmdBFEXISTS(args []string) []byte {
 	if len(args) != 2 {
 		return Encode(errors.New("(error) ERR wrong number of arguments for 'BF.EXIST' command"), false)
 	}
 
 	key := args[0]
-	bf, exist := bfStore[key]
+	bf, exist := w.bfStore[key]
 	if !exist {
 		return Encode(fmt.Errorf("Bloom filter with key '%s' is not exist", key), false)
 	}

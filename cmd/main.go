@@ -15,7 +15,8 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	go server.RunIOMultiplexingServer(&wg)
+	s := server.NewServer()
+	go s.Run(&wg)
 	go server.WaitForSignal(&wg, signals)
 
 	wg.Wait()

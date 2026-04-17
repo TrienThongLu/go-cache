@@ -10,9 +10,7 @@ import (
 	"github.com/TrienThongLu/goCache/internal/data_structure"
 )
 
-type cmdCMSINITBYDIM struct{}
-
-func (cmd cmdCMSINITBYDIM) run(args []string) []byte {
+func (w *Worker) cmdCMSINITBYDIM(args []string) []byte {
 	if len(args) != 3 {
 		return Encode(errors.New("(error) ERR wrong number of arguments for 'CMS.INITBYDIM' command"), false)
 	}
@@ -28,18 +26,16 @@ func (cmd cmdCMSINITBYDIM) run(args []string) []byte {
 		return Encode(fmt.Errorf("depth must be a integer number %s", args[2]), false)
 	}
 
-	if _, exist := cmsStore[key]; exist {
+	if _, exist := w.cmsStore[key]; exist {
 		return Encode(errors.New("CMS: key already exist"), false)
 	}
 
-	cmsStore[key] = data_structure.CreateNewCMS(uint64(width), uint64(depth))
+	w.cmsStore[key] = data_structure.CreateNewCMS(uint64(width), uint64(depth))
 
 	return constant.RespOk
 }
 
-type cmdCMSINITBYPROB struct{}
-
-func (cmd cmdCMSINITBYPROB) run(args []string) []byte {
+func (w *Worker) cmdCMSINITBYPROB(args []string) []byte {
 	if len(args) != 3 {
 		return Encode(errors.New("(error) ERR wrong number of arguments for 'CMS.INITBYPROB' command"), false)
 	}
@@ -61,25 +57,23 @@ func (cmd cmdCMSINITBYPROB) run(args []string) []byte {
 		return Encode(errors.New("CMS: invalid probability value"), false)
 	}
 
-	if _, exist := cmsStore[key]; exist {
+	if _, exist := w.cmsStore[key]; exist {
 		return Encode(errors.New("CMS: key already exist"), false)
 	}
 
-	w, d := data_structure.CalcCMSDim(errRate, probability)
-	cmsStore[key] = data_structure.CreateNewCMS(w, d)
+	width, depth := data_structure.CalcCMSDim(errRate, probability)
+	w.cmsStore[key] = data_structure.CreateNewCMS(width, depth)
 
 	return constant.RespOk
 }
 
-type cmdCMSINCRBY struct{}
-
-func (cmd cmdCMSINCRBY) run(args []string) []byte {
+func (w *Worker) cmdCMSINCRBY(args []string) []byte {
 	if len(args) < 3 || len(args)%2 == 0 {
 		return Encode(errors.New("(error) ERR wrong number of arguments for 'CMS.INCRBY' command"), false)
 	}
 
 	key := args[0]
-	cms, exist := cmsStore[key]
+	cms, exist := w.cmsStore[key]
 	if !exist {
 		return Encode(errors.New("CMS: key does not exist"), false)
 	}
@@ -103,15 +97,13 @@ func (cmd cmdCMSINCRBY) run(args []string) []byte {
 	return Encode(res, false)
 }
 
-type cmdCMSQUERY struct{}
-
-func (cmd cmdCMSQUERY) run(args []string) []byte {
+func (w *Worker) cmdCMSQUERY(args []string) []byte {
 	if len(args) < 2 {
 		return Encode(errors.New("(error) ERR wrong number of arguments for 'CMS.QUERY' command"), false)
 	}
 
 	key := args[0]
-	cms, exist := cmsStore[key]
+	cms, exist := w.cmsStore[key]
 	if !exist {
 		return Encode(errors.New("CMS: key does not exist"), false)
 	}

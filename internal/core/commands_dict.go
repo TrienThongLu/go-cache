@@ -11,9 +11,7 @@ import (
 
 const stringType = constant.StringType
 
-type cmdSET struct{}
-
-func (cmd cmdSET) run(args []string) []byte {
+func (w *Worker) cmdSET(args []string) []byte {
 	if len(args) != 2 && len(args) != 4 {
 		return Encode(errors.New("ERR wrong number of arguments for 'set' command"), false)
 	}
@@ -35,20 +33,18 @@ func (cmd cmdSET) run(args []string) []byte {
 		ttlMs = ttlSec * 1000
 	}
 
-	dictStore.Set(key, value, stringType, ttlMs)
+	w.dictStore.Set(key, value, stringType, ttlMs)
 
 	return constant.RespOk
 }
 
-type cmdGET struct{}
-
-func (cmd cmdGET) run(args []string) []byte {
+func (w *Worker) cmdGET(args []string) []byte {
 	if len(args) != 1 {
 		return Encode(errors.New("ERR wrong number of arguments for 'get' command"), false)
 	}
 
 	key := args[0]
-	obj := dictStore.Get(key)
+	obj := w.dictStore.Get(key)
 	if obj == nil {
 		return constant.RespNil
 	}
@@ -60,20 +56,18 @@ func (cmd cmdGET) run(args []string) []byte {
 	return Encode(obj.Value, false)
 }
 
-type cmdTTL struct{}
-
-func (cmd cmdTTL) run(args []string) []byte {
+func (w *Worker) cmdTTL(args []string) []byte {
 	if len(args) != 1 {
 		return Encode(errors.New("ERR wrong number of arguments for 'ttl' command"), false)
 	}
 
 	key := args[0]
-	obj := dictStore.Get(key)
+	obj := w.dictStore.Get(key)
 	if obj == nil {
 		return constant.TtlKeyNotExist
 	}
 
-	exp, exist := dictStore.GetExpiry(key)
+	exp, exist := w.dictStore.GetExpiry(key)
 	if !exist {
 		return constant.TtlKeyExistNoExpire
 	}
@@ -82,18 +76,16 @@ func (cmd cmdTTL) run(args []string) []byte {
 	return Encode(int64(remainMs/1000), false)
 }
 
-type cmdDEL struct{}
-
-func (cmd cmdDEL) run(args []string) []byte {
+func (w *Worker) cmdDEL(args []string) []byte {
 	if len(args) == 0 {
 		return Encode(errors.New("ERR wrong number of arguments for 'del' command"), false)
 	}
 
 	res := 0
 	for _, key := range args {
-		obj := dictStore.Get(key)
+		obj := w.dictStore.Get(key)
 		if obj != nil {
-			dictStore.Del(key)
+			w.dictStore.Del(key)
 			res++
 		}
 	}
@@ -101,16 +93,14 @@ func (cmd cmdDEL) run(args []string) []byte {
 	return Encode(res, false)
 }
 
-type cmdEXISTS struct{}
-
-func (cmd cmdEXISTS) run(args []string) []byte {
+func (w *Worker) cmdEXISTS(args []string) []byte {
 	if len(args) == 0 {
 		return Encode(errors.New("ERR wrong number of arguments for 'exists' command"), false)
 	}
 
 	res := 0
 	for _, key := range args {
-		obj := dictStore.Get(key)
+		obj := w.dictStore.Get(key)
 		if obj != nil {
 			res++
 		}
@@ -119,15 +109,13 @@ func (cmd cmdEXISTS) run(args []string) []byte {
 	return Encode(res, false)
 }
 
-type cmdEXPIRE struct{}
-
-func (cmd cmdEXPIRE) run(args []string) []byte {
+func (w *Worker) cmdEXPIRE(args []string) []byte {
 	if len(args) != 2 {
 		return Encode(errors.New("ERR wrong number of arguments for 'expire' command"), false)
 	}
 
 	key := args[0]
-	obj := dictStore.Get(key)
+	obj := w.dictStore.Get(key)
 	if obj == nil {
 		return Encode(0, false)
 	}
@@ -138,7 +126,7 @@ func (cmd cmdEXPIRE) run(args []string) []byte {
 	}
 	ttlMs := ttlSec * 1000
 
-	dictStore.SetExpiry(key, ttlMs)
+	w.dictStore.SetExpiry(key, ttlMs)
 
 	return Encode(1, false)
 }

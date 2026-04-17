@@ -29,9 +29,9 @@ func CreateNewCMS(w uint64, d uint64) *CMS {
 }
 
 func CalcCMSDim(errRate float64, errProb float64) (uint64, uint64) {
-	w := uint64(math.Ceil(2.0 / errRate))
-	d := uint64(math.Ceil(math.Log10(errProb) / Log10PointFive))
-	return w, d
+	width := uint64(math.Ceil(2.0 / errRate))
+	depth := uint64(math.Ceil(math.Log10(errProb) / Log10PointFive))
+	return width, depth
 }
 
 func (cms *CMS) calcHash(item string, seed uint64) uint64 {

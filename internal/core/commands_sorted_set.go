@@ -11,9 +11,7 @@ import (
 
 const zSetType = constant.ZSetType
 
-type cmdZADD struct{}
-
-func (cmd cmdZADD) run(args []string) []byte {
+func (w *Worker) cmdZADD(args []string) []byte {
 	if len(args) < 3 {
 		return Encode(errors.New("ERR wrong number of arguments for 'zadd' command"), false)
 	}
@@ -24,10 +22,10 @@ func (cmd cmdZADD) run(args []string) []byte {
 		return Encode(errors.New("ERR wrong number of (score, member) arg"), false)
 	}
 
-	obj := dictStore.Get(key)
+	obj := w.dictStore.Get(key)
 	if obj == nil {
-		dictStore.Set(key, data_structure.NewSortedSet(constant.DefaultBPlusTreeDegree), zSetType, 0)
-		obj = dictStore.Get(key)
+		w.dictStore.Set(key, data_structure.NewSortedSet(constant.DefaultBPlusTreeDegree), zSetType, 0)
+		obj = w.dictStore.Get(key)
 	}
 
 	if err := checkType(zSetType, obj.Type); err != nil {
@@ -54,16 +52,14 @@ func (cmd cmdZADD) run(args []string) []byte {
 	return Encode(count, false)
 }
 
-type cmdZSCORE struct{}
-
-func (cmd cmdZSCORE) run(args []string) []byte {
+func (w *Worker) cmdZSCORE(args []string) []byte {
 	if len(args) != 2 {
 		return Encode(errors.New("ERR wrong number of arguments for 'zscore' command"), false)
 	}
 
 	key, member := args[0], args[1]
 
-	obj := dictStore.Get(key)
+	obj := w.dictStore.Get(key)
 	if obj == nil {
 		return constant.RespNil
 	}
@@ -81,15 +77,13 @@ func (cmd cmdZSCORE) run(args []string) []byte {
 	return Encode(fmt.Sprintf("%f", score), false)
 }
 
-type cmdZRANK struct{}
-
-func (cmd cmdZRANK) run(args []string) []byte {
+func (w *Worker) cmdZRANK(args []string) []byte {
 	if len(args) != 2 {
 		return Encode(errors.New("ERR wrong number of arguments for 'zrank' command"), false)
 	}
 
 	key, member := args[0], args[1]
-	obj := dictStore.Get(key)
+	obj := w.dictStore.Get(key)
 	if obj == nil {
 		return constant.RespNil
 	}
